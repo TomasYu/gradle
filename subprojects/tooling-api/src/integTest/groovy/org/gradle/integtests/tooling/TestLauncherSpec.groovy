@@ -215,7 +215,6 @@ abstract class TestLauncherSpec extends ToolingApiSpecification {
         """
     }
 
-
     def changeTestSource() {
         // adding two more test methods
         file("src/test/java/example/MyTest.java").text = """

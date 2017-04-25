@@ -423,8 +423,6 @@ class TestLauncherCrossVersionSpec extends TestLauncherSpec {
         true
     }
 
-
-
     def testCode() {
         settingsFile << "rootProject.name = 'testproject'\n"
         buildFile.text = simpleJavaProject()

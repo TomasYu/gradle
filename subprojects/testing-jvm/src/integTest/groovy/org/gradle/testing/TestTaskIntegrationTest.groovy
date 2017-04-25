@@ -206,6 +206,31 @@ class TestTaskIntegrationTest extends AbstractIntegrationSpec {
         fails 'test'
     }
 
+    @Requires(TestPrecondition.ONLINE)
+    def "emits deprecation warning when using testClassesDir"() {
+        buildFile << """
+            apply plugin: 'java'
+            repositories { jcenter() }
+
+            dependencies { 
+                testCompile 'junit:junit:4.12' 
+            }
+            compileTestJava {
+                destinationDir = file("build/non-standard")
+            }
+            test {
+                testClassesDir = compileTestJava.destinationDir
+                classpath = sourceSets.test.runtimeClasspath + files(compileTestJava.destinationDir)
+            }
+        """
+        file('src/test/java/MyTest.java') << standaloneTestClass()
+        when:
+        executer.expectDeprecationWarning()
+        succeeds("test")
+        then:
+        result.assertOutputContains("The setTestClassesDir(File) method has been deprecated and is scheduled to be removed in Gradle 5.0. Please use the setTestClassesDirs(FileCollection) method instead.")
+    }
+
     private static String standaloneTestClass() {
         return testClass('MyTest')
     }

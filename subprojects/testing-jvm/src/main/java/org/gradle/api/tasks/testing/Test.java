@@ -894,7 +894,11 @@ public class Test extends ConventionTask implements JavaForkOptions, PatternFilt
         return testClassesDirs;
     }
 
-    // TODO: Docs
+    /**
+     * Sets the directories to scan for compiled test sources.
+     *
+     * @param testClassesDirs All test class directories to be used.
+     */
     public void setTestClassesDirs(FileCollection testClassesDirs) {
         this.testClassesDirs = testClassesDirs;
     }
