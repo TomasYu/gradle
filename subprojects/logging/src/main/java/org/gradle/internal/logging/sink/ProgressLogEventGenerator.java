@@ -18,6 +18,7 @@ package org.gradle.internal.logging.sink;
 
 import org.gradle.api.logging.LogLevel;
 import org.gradle.internal.SystemProperties;
+import org.gradle.internal.logging.events.BatchOutputEventListener;
 import org.gradle.internal.logging.events.OperationIdentifier;
 import org.gradle.internal.logging.events.OutputEvent;
 import org.gradle.internal.logging.events.OutputEventListener;
@@ -40,7 +41,7 @@ import static org.gradle.internal.logging.text.StyledTextOutput.Style;
  * An {@code org.gradle.logging.internal.OutputEventListener} implementation which generates output events to log the
  * progress of operations.
  */
-public class ProgressLogEventGenerator implements OutputEventListener {
+public class ProgressLogEventGenerator extends BatchOutputEventListener {
     private static final String EOL = SystemProperties.getInstance().getLineSeparator();
 
     private final OutputEventListener listener;
@@ -73,7 +74,7 @@ public class ProgressLogEventGenerator implements OutputEventListener {
 
     private void onComplete(ProgressCompleteEvent progressCompleteEvent) {
         assert !operations.isEmpty();
-        Operation operation = operations.remove(progressCompleteEvent.getOperationId());
+        Operation operation = operations.remove(progressCompleteEvent.getProgressOperationId());
 
         // Didn't find an operation with that id in the map
         if (operation == null) {
