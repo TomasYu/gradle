@@ -99,6 +99,16 @@ public interface SourceSetOutput extends FileCollection {
      *
      * @param classesDir the classes dir. Should not be null.
      * @deprecated Set the output directory for the particular {@link org.gradle.api.file.SourceDirectorySet} or use {@link #setClassesDirs(FileCollection)}
+     * @since 4.0
+     */
+    void setClassesDir(File classesDir);
+
+    /**
+     * Sets the directory to assemble the compiled classes into.
+     * <p>
+     * See example at {@link SourceSetOutput}
+     *
+     * @param classesDir the classes dir. Should not be null.
      */
     @Deprecated
     void setClassesDir(Object classesDir);
@@ -125,6 +135,16 @@ public interface SourceSetOutput extends FileCollection {
      * @return The dir resources are copied to.
      */
     File getResourcesDir();
+
+    /**
+     * Sets the output directory for resources
+     * <p>
+     * See example at {@link SourceSetOutput}
+     *
+     * @param resourcesDir the classes dir. Should not be null.
+     * @since 4.0
+     */
+    void setResourcesDir(File resourcesDir);
 
     /**
      * Sets the output directory for resources

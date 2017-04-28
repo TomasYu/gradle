@@ -24,8 +24,11 @@ import org.gradle.api.artifacts.component.ComponentArtifactIdentifier;
 import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.internal.artifacts.DefaultResolvedArtifact;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ArtifactVisitor;
+import org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.BrokenResolvedArtifactSet;
+import org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.BuildDependenciesVisitor;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ResolvedArtifactSet;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ResolvedVariant;
+import org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ResolvedVariantSet;
 import org.gradle.api.internal.attributes.AttributeContainerInternal;
 import org.gradle.api.internal.attributes.AttributesSchemaInternal;
 import org.gradle.api.tasks.TaskDependency;
@@ -43,7 +46,6 @@ import org.gradle.internal.progress.BuildOperationDescriptor;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -80,18 +82,26 @@ public class DefaultArtifactTransforms implements ArtifactTransforms {
         }
 
         @Override
-        public ResolvedArtifactSet select(Collection<? extends ResolvedVariant> variants, AttributesSchemaInternal producerSchema) {
-            AttributeMatcher matcher = schema.withProducer(producerSchema);
-            List<? extends ResolvedVariant> matches = matcher.matches(variants, requested);
+        public ResolvedArtifactSet select(ResolvedVariantSet producer) {
+            try {
+                return doSelect(producer);
+            } catch (Throwable t) {
+                return new BrokenResolvedArtifactSet(t);
+            }
+        }
+
+        private ResolvedArtifactSet doSelect(ResolvedVariantSet producer) {
+            AttributeMatcher matcher = schema.withProducer(producer.getSchema());
+            List<? extends ResolvedVariant> matches = matcher.matches(producer.getVariants(), requested);
             if (matches.size() == 1) {
                 return matches.get(0).getArtifacts();
             }
             if (matches.size() > 1) {
-                throw new AmbiguousVariantSelectionException(requested, matches, matcher);
+                throw new AmbiguousVariantSelectionException(producer.getDisplayName(), requested, matches, matcher);
             }
 
             List<Pair<ResolvedVariant, ConsumerVariantMatchResult.ConsumerVariant>> candidates = new ArrayList<Pair<ResolvedVariant, ConsumerVariantMatchResult.ConsumerVariant>>();
-            for (ResolvedVariant variant : variants) {
+            for (ResolvedVariant variant : producer.getVariants()) {
                 AttributeContainerInternal variantAttributes = variant.getAttributes().asImmutable();
                 ConsumerVariantMatchResult matchResult = new ConsumerVariantMatchResult();
                 matchingCache.collectConsumerVariants(variantAttributes, requested, matchResult);
@@ -105,13 +115,13 @@ public class DefaultArtifactTransforms implements ArtifactTransforms {
             }
 
             if (!candidates.isEmpty()) {
-                throw new AmbiguousTransformException(requested, candidates);
+                throw new AmbiguousTransformException(producer.getDisplayName(), requested, candidates);
             }
 
             if (ignoreWhenNoMatches) {
                 return ResolvedArtifactSet.EMPTY;
             }
-            throw new NoMatchingVariantSelectionException(requested, variants, matcher);
+            throw new NoMatchingVariantSelectionException(producer.getDisplayName(), requested, producer.getVariants(), matcher);
         }
     }
 
@@ -135,8 +145,8 @@ public class DefaultArtifactTransforms implements ArtifactTransforms {
         }
 
         @Override
-        public void collectBuildDependencies(Collection<? super TaskDependency> dest) {
-            delegate.collectBuildDependencies(dest);
+        public void collectBuildDependencies(BuildDependenciesVisitor visitor) {
+            delegate.collectBuildDependencies(visitor);
         }
 
         private static class TransformingAsyncArtifactListener implements AsyncArtifactListener {

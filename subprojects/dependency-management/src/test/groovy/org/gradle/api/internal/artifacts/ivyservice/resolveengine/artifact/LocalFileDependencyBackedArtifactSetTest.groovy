@@ -39,15 +39,18 @@ class LocalFileDependencyBackedArtifactSetTest extends Specification {
     def "has build dependencies"() {
         def fileBuildDependencies = Stub(TaskDependency)
         def files = Stub(FileCollection)
+        def visitor = Mock(BuildDependenciesVisitor)
 
         given:
         dep.files >> files
         files.buildDependencies >> fileBuildDependencies
 
-        expect:
-        def deps = []
-        set.collectBuildDependencies(deps)
-        deps == [fileBuildDependencies]
+        when:
+        set.collectBuildDependencies(visitor)
+
+        then:
+        1 * visitor.visitDependency(fileBuildDependencies)
+        0 * visitor._
     }
 
     def "does not visit files when visitor does not require them"() {
@@ -120,7 +123,7 @@ class LocalFileDependencyBackedArtifactSetTest extends Specification {
         _ * listener.includeFileDependencies() >> true
         _ * filter.isSatisfiedBy(_) >> true
         1 * files.files >> ([f1, f2] as Set)
-        2 * selector.select(_, _) >> { Set<ResolvedVariant> variants, schema -> variants.first() }
+        2 * selector.select(_) >> { ResolvedVariantSet variants -> variants.variants.first() }
         1 * listener.fileAvailable(f1)
         1 * listener.fileAvailable(f2)
         0 * _
@@ -158,7 +161,7 @@ class LocalFileDependencyBackedArtifactSetTest extends Specification {
         _ * filter.isSatisfiedBy(_) >> true
         _ * listener.includeFileDependencies() >> true
         1 * files.files >> ([f1, f2] as Set)
-        2 * selector.select(_, _) >> { Set<ResolvedVariant> variants, schema -> variants.first() }
+        2 * selector.select(_) >> { ResolvedVariantSet variants -> variants.variants.first() }
         1 * visitor.visitFile(new OpaqueComponentArtifactIdentifier(f1), DefaultArtifactAttributes.forFile(f1, attributesFactory), f1)
         1 * visitor.visitFile(new OpaqueComponentArtifactIdentifier(f2), DefaultArtifactAttributes.forFile(f2, attributesFactory), f2)
         0 * visitor._

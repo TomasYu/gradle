@@ -78,6 +78,11 @@ public class DefaultSourceSetOutput extends CompositeFileCollection implements S
         return null;
     }
 
+    @Override
+    public void setClassesDir(File classesDir) {
+        this.classesDir = classesDir;
+    }
+
     public void setClassesDir(Object classesDir) {
         SingleMessageLogger.nagUserOfDeprecatedBehaviour("Using a single directory for all classes from a source set");
         this.classesDir = classesDir;
@@ -97,6 +102,11 @@ public class DefaultSourceSetOutput extends CompositeFileCollection implements S
             return null;
         }
         return fileResolver.resolve(resourcesDir);
+    }
+
+    @Override
+    public void setResourcesDir(File resourcesDir) {
+        this.resourcesDir = resourcesDir;
     }
 
     public void setResourcesDir(Object resourcesDir) {

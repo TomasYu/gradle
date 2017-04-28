@@ -26,6 +26,7 @@ import org.gradle.internal.SystemProperties;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.concurrent.GradleThread;
+import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.concurrent.StoppableExecutor;
 import org.gradle.internal.exceptions.DefaultMultiCauseException;
 import org.gradle.internal.logging.events.OperationIdentifier;
@@ -34,6 +35,7 @@ import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.gradle.internal.operations.BuildOperation;
 import org.gradle.internal.operations.BuildOperationContext;
 import org.gradle.internal.operations.BuildOperationExecutor;
+import org.gradle.internal.operations.BuildOperationIdentifierRegistry;
 import org.gradle.internal.operations.BuildOperationQueue;
 import org.gradle.internal.operations.BuildOperationQueueFactory;
 import org.gradle.internal.operations.BuildOperationQueueFailure;
@@ -51,7 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 //TODO move to base-services once the ProgressLogger dependency is removed
-public class DefaultBuildOperationExecutor implements BuildOperationExecutor {
+public class DefaultBuildOperationExecutor implements BuildOperationExecutor, Stoppable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultBuildOperationExecutor.class);
     private static final String LINE_SEPARATOR = SystemProperties.getInstance().getLineSeparator();
 
@@ -160,7 +162,7 @@ public class DefaultBuildOperationExecutor implements BuildOperationExecutor {
 
         DefaultBuildOperationState operationBefore = this.currentOperation.get();
         this.currentOperation.set(currentOperation);
-
+        BuildOperationIdentifierRegistry.setCurrentOperationIdentifier(this.currentOperation.get().getId());
         try {
             listener.started((BuildOperationInternal) descriptor, new OperationStartEvent(currentOperation.getStartTime()));
 
@@ -193,6 +195,11 @@ public class DefaultBuildOperationExecutor implements BuildOperationExecutor {
             LOGGER.debug("Build operation '{}' completed", descriptor.getDisplayName());
         } finally {
             this.currentOperation.set(operationBefore);
+            if (parent != null) {
+                BuildOperationIdentifierRegistry.setCurrentOperationIdentifier(parent.getId());
+            } else {
+                BuildOperationIdentifierRegistry.clearCurrentOperationIdentifier();
+            }
             currentOperation.setRunning(false);
         }
     }
@@ -213,7 +220,7 @@ public class DefaultBuildOperationExecutor implements BuildOperationExecutor {
     @Nullable
     private ProgressLogger maybeStartProgressLogging(DefaultBuildOperationState currentOperation) {
         if (providesProgressLogging(currentOperation)) {
-            ProgressLogger progressLogger = progressLoggerFactory.newOperation(DefaultBuildOperationExecutor.class);
+            ProgressLogger progressLogger = progressLoggerFactory.newOperation(DefaultBuildOperationExecutor.class, (OperationIdentifier) currentOperation.getId());
             progressLogger.setDescription(currentOperation.getDescription().getDisplayName());
             progressLogger.setShortDescription(currentOperation.getDescription().getProgressDisplayName());
             progressLogger.started();
@@ -269,6 +276,7 @@ public class DefaultBuildOperationExecutor implements BuildOperationExecutor {
         }), LINE_SEPARATOR + "AND" + LINE_SEPARATOR);
     }
 
+    @Override
     public void stop() {
         fixedSizePool.stop();
     }

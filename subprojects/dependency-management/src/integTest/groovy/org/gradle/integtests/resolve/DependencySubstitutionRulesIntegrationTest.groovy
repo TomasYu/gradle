@@ -360,8 +360,6 @@ class DependencySubstitutionRulesIntegrationTest extends AbstractIntegrationSpec
                 configurations.conf.resolutionStrategy.dependencySubstitution {
                     substitute module("$selector") with project(":api")
                 }
-
-                task("buildConf", dependsOn: configurations.conf)
             }
 """
 
@@ -378,10 +376,7 @@ class DependencySubstitutionRulesIntegrationTest extends AbstractIntegrationSpec
             }
         }
 
-        when:
-        run ":impl:buildConf"
-
-        then:
+        and:
         executedAndNotSkipped ":api:jar"
 
         where:
@@ -520,10 +515,7 @@ class DependencySubstitutionRulesIntegrationTest extends AbstractIntegrationSpec
             }
         }
 
-        when:
-        run ":test:buildConf"
-
-        then:
+        and:
         executedAndNotSkipped ":api:jar"
     }
 
@@ -709,7 +701,7 @@ class DependencySubstitutionRulesIntegrationTest extends AbstractIntegrationSpec
         fails ":impl:checkDeps"
 
         then:
-        failure.assertHasDescription("Execution failed for task ':impl:checkDeps'.")
+        failure.assertHasDescription("Could not determine the dependencies of task ':impl:checkDeps'.")
         failure.assertHasCause("Could not resolve all dependencies for configuration ':impl:conf'.")
         failure.assertHasCause("project :doesnotexist not found.")
     }
