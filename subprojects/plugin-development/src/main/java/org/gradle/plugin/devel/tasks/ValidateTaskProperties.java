@@ -108,7 +108,7 @@ import java.util.Map;
 @CacheableTask
 @SuppressWarnings("WeakerAccess")
 public class ValidateTaskProperties extends ConventionTask implements VerificationTask {
-    private FileCollection classesDirs;
+    private FileCollection classes;
     private FileCollection classpath;
     private Object outputFile;
     private boolean ignoreFailures;
@@ -117,7 +117,7 @@ public class ValidateTaskProperties extends ConventionTask implements Verificati
     @TaskAction
     public void validateTaskClasses() throws IOException {
         ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
-        ClassPath classPath = new DefaultClassPath(Iterables.concat(getClassesDirs(), getClasspath()));
+        ClassPath classPath = new DefaultClassPath(Iterables.concat(getClasses(), getClasspath()));
         ClassLoader classLoader = getClassLoaderFactory().createIsolatedClassLoader(classPath);
         Thread.currentThread().setContextClassLoader(classLoader);
         try {
@@ -142,7 +142,7 @@ public class ValidateTaskProperties extends ConventionTask implements Verificati
             throw new RuntimeException(e);
         }
 
-        getClassesDirs().getAsFileTree().visit(new EmptyFileVisitor() {
+        getClasses().getAsFileTree().visit(new EmptyFileVisitor() {
             @Override
             public void visitFile(FileVisitDetails fileDetails) {
                 if (!fileDetails.getPath().endsWith(".class")) {
@@ -264,20 +264,20 @@ public class ValidateTaskProperties extends ConventionTask implements Verificati
     }
 
     /**
-     * The directory containing the classes to validate.
+     * The classes to validate.
      */
     @PathSensitive(PathSensitivity.RELATIVE)
     @InputFiles
     @SkipWhenEmpty
-    public FileCollection getClassesDirs() {
-        return classesDirs;
+    public FileCollection getClasses() {
+        return classes;
     }
 
     /**
-     * Sets the directory containing the classes to validate.
+     * Sets the classes to validate.
      */
-    public void setClassesDirs(FileCollection classesDirs) {
-        this.classesDirs = classesDirs;
+    public void setClasses(FileCollection classes) {
+        this.classes = classes;
     }
 
     /**
