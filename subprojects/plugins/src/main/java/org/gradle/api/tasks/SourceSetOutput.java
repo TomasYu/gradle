@@ -101,6 +101,7 @@ public interface SourceSetOutput extends FileCollection {
      * @deprecated Set the output directory for the particular {@link org.gradle.api.file.SourceDirectorySet} or use {@link #setClassesDirs(FileCollection)}
      * @since 4.0
      */
+    @Deprecated
     void setClassesDir(File classesDir);
 
     /**
@@ -109,6 +110,7 @@ public interface SourceSetOutput extends FileCollection {
      * See example at {@link SourceSetOutput}
      *
      * @param classesDir the classes dir. Should not be null.
+     * @deprecated Set the output directory for the particular {@link org.gradle.api.file.SourceDirectorySet} or use {@link #setClassesDirs(FileCollection)}
      */
     @Deprecated
     void setClassesDir(Object classesDir);
