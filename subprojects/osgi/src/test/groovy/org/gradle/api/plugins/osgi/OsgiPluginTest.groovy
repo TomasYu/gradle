@@ -36,6 +36,6 @@ class OsgiPluginTest extends AbstractProjectBuilderSpec {
         expect:
         OsgiManifest osgiManifest = project.jar.manifest
         osgiManifest.classpath == project.configurations."$JavaPlugin.RUNTIME_CONFIGURATION_NAME"
-        osgiManifest.classesDir == temporaryFolder.file("build/tmp/jar/osgi-classes")
+        osgiManifest.classesDir == temporaryFolder.file("build/osgi-classes")
     }
 }

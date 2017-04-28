@@ -18,13 +18,12 @@ package org.gradle.api.plugins.osgi;
 import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.file.CopySpec;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.bundling.Jar;
 
 import java.io.File;
@@ -42,24 +41,18 @@ public class OsgiPlugin implements Plugin<Project> {
         project.getPlugins().withType(JavaPlugin.class, new Action<JavaPlugin>() {
             @Override
             public void execute(JavaPlugin javaPlugin) {
-                Jar jarTask = (Jar) project.getTasks().getByName("jar");
-                OsgiManifest osgiManifest = osgiConvention.osgiManifest();
 
                 // When creating the OSGi manifest, we must have a single view of all of the classes included in the jar.
-                final File singleClassesDirectory = new File(jarTask.getTemporaryDir(), "osgi-classes");
-                jarTask.doFirst(new Action<Task>() {
-                    @Override
-                    public void execute(Task task) {
-                        project.sync(new Action<CopySpec>() {
-                            @Override
-                            public void execute(CopySpec copySpec) {
-                                final FileCollection classes = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main").getOutput().getClassesDirs();
-                                copySpec.from(classes);
-                                copySpec.into(singleClassesDirectory);
-                            }
-                        });
-                    }
-                });
+                Sync prepareOsgiClasses = project.getTasks().create("osgiClasses", Sync.class);
+                FileCollection classes = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main").getOutput().getClassesDirs();
+                File singleClassesDirectory = new File(project.getBuildDir(), "osgi-classes");
+                prepareOsgiClasses.setDescription("Prepares a single classes directory required for OSGi analysis.");
+                prepareOsgiClasses.from(classes);
+                prepareOsgiClasses.into(singleClassesDirectory);
+
+                Jar jarTask = (Jar) project.getTasks().getByName("jar");
+                jarTask.dependsOn(prepareOsgiClasses);
+                OsgiManifest osgiManifest = osgiConvention.osgiManifest();
                 osgiManifest.setClassesDir(singleClassesDirectory);
                 osgiManifest.setClasspath(project.getConfigurations().getByName("runtime"));
 
