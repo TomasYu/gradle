@@ -158,7 +158,12 @@ public class DefaultSourceDirectorySet extends CompositeFileTree implements Sour
     }
 
     @Override
-    public void setOutputDir(Provider<File> outputDir) {
+    public void setOutputDir(Provider<File> provider) {
+        this.outputDir.set(provider);
+    }
+
+    @Override
+    public void setOutputDir(File outputDir) {
         this.outputDir.set(outputDir);
     }
 

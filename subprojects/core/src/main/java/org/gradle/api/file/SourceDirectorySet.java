@@ -109,8 +109,14 @@ public interface SourceDirectorySet extends FileTree, PatternFilterable, Named, 
     File getOutputDir();
 
     /**
-     * Sets the directory to assemble the compiled classes into.
-     * @param outputDir
+     * Sets the provider that gives the directory to assemble the compiled classes into.
+     * @param provider
      */
-    void setOutputDir(Provider<File> outputDir);
+    void setOutputDir(Provider<File> provider);
+
+    /**
+     * Sets the directory to assemble the compiled classes into.
+     * @param outputDir output directory for this source directory set
+     */
+    void setOutputDir(File outputDir);
 }

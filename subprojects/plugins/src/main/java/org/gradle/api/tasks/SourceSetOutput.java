@@ -33,9 +33,9 @@ import java.util.concurrent.Callable;
  * sourceSets {
  *   main {
  *     //if you truly want to override the defaults:
- *     output.resourcesDir = 'out/res'
- *     // This will cause all languages to use the same output directory
- *     output.classesDir   = 'out/bin'
+ *     output.resourcesDir = file('out/bin')
+ *     // Compiled Java classes should use this directory
+ *     java.outputDir = file('out/bin')
  *   }
  * }
  * </pre>
