@@ -20,6 +20,7 @@ import org.gradle.api.file.FileCollection;
 
 import java.io.File;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 /**
  * A collection of all output directories (compiled classes, processed resources, etc.) - notice that {@link SourceSetOutput} extends {@link FileCollection}.
@@ -123,11 +124,17 @@ public interface SourceSetOutput extends FileCollection {
     FileCollection getClassesDirs();
 
     /**
-     * Sets the collection of directories that compiled classes are assembled into.
+     * Adds a new classes directory that compiled classes are assembled into.
      *
-     * @param classesDirs the classes dirs. Should not be null.
+     * @param classesDir the classes dir. Should not be null.
      */
-    void setClassesDirs(FileCollection classesDirs);
+    void addClassesDir(Callable<File> classesDir);
+
+    /**
+     * Source set uses the legacy layout (single classes directory for the entire source set).
+     * @return true if the source set has a single classes directory
+     */
+    boolean isLegacyLayout();
 
     /**
      * Returns the output directory for resources
