@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package org.gradle.internal.progress;
+package org.gradle.api.internal.changedetection.state;
+
+import com.google.common.hash.HashCode;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.zip.ZipEntry;
 
 /**
- * This class is consumed by the build scan plugin.
- * */
-public final class OperationStartEvent {
-    private final long startTime;
-
-    public OperationStartEvent(long startTime) {
-        this.startTime = startTime;
-    }
-
-    public long getStartTime() {
-        return startTime;
-    }
+ * Hashes contents of resources (e.g., a class file in a jar or a class file in a directory)
+ */
+public interface ContentHasher {
+    HashCode hash(RegularFileSnapshot fileSnapshot);
+    HashCode hash(ZipEntry zipEntry, InputStream zipInput) throws IOException;
 }

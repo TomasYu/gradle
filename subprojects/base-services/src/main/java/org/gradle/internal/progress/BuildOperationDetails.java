@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package org.gradle.api.internal.changedetection.state;
-
-import com.google.common.hash.HashCode;
-import org.gradle.api.Nullable;
+package org.gradle.internal.progress;
 
 /**
- * Calculates a hash for a classpath entry (a jar or class file)
+ * Strongly typed details of a build operation, for listeners that want to do deeper analysis
+ * instead of just showing display names.
+ *
+ * This interface is intentionally internal and consumed by the build scan plugin.
+ *
+ * The return type token is currently not used/enforced.
+ * We will iterate on the producer side API to compile time enforce it.
+ *
+ * @param <R> the type of result
+ * @see BuildOperationDescriptor
+ * @since 4.0
  */
-public interface ClasspathEntryHasher {
-    /**
-     * Returns a hash based on the contents of the given fileSnapshot.
-     *
-     * May return <code>null</code>, if the file contributes nothing to the classpath.
-     *
-     * e.g., an empty jar file or a class file with no public API (for compile classpaths).
-     */
-    @Nullable
-    HashCode hash(FileSnapshot fileSnapshot);
+@SuppressWarnings("unused") // R type token is not enforced right now
+public interface BuildOperationDetails<R> {
+
 }
