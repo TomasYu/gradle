@@ -35,9 +35,7 @@ class ValidateTaskPropertiesIntegrationTest extends AbstractIntegrationSpec {
                 validator.failOnWarning = true
             }
             tasks.check.dependsOn validateTaskProperties
-            afterEvaluate {
-                validateTaskProperties.classes = sourceSets.main.output.classesDirs
-            }
+            validateTaskProperties.classes = sourceSets.main.output.classesDirs
         """
     }
 
