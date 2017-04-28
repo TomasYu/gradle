@@ -74,6 +74,7 @@ public class DefaultSourceSetOutput extends CompositeFileCollection implements S
         return outputDirectories.getDisplayName();
     }
 
+    @Override
     public File getClassesDir() {
         if (isLegacyLayout()) {
             return fileResolver.resolve(classesDir);
@@ -91,6 +92,7 @@ public class DefaultSourceSetOutput extends CompositeFileCollection implements S
         setClassesDir((Object)classesDir);
     }
 
+    @Override
     public void setClassesDir(Object classesDir) {
         SingleMessageLogger.nagUserOfDeprecatedBehaviour("Using a single directory for all classes from a source set");
         this.classesDir = classesDir;
@@ -112,6 +114,7 @@ public class DefaultSourceSetOutput extends CompositeFileCollection implements S
         return classesDir!=null;
     }
 
+    @Override
     public File getResourcesDir() {
         if (resourcesDir == null) {
             return null;
@@ -124,18 +127,21 @@ public class DefaultSourceSetOutput extends CompositeFileCollection implements S
         this.resourcesDir = resourcesDir;
     }
 
+    @Override
     public void setResourcesDir(Object resourcesDir) {
        this.resourcesDir = resourcesDir;
     }
 
-    public void builtBy(Object ... taskPaths) {
+    public void builtBy(Object... taskPaths) {
         outputDirectories.builtBy(taskPaths);
     }
 
+    @Override
     public void dir(Object dir) {
         this.dir(Collections.<String, Object>emptyMap(), dir);
     }
 
+    @Override
     public void dir(Map<String, Object> options, Object dir) {
         this.dirs.from(dir);
         this.outputDirectories.from(dir);
@@ -147,6 +153,7 @@ public class DefaultSourceSetOutput extends CompositeFileCollection implements S
         }
     }
 
+    @Override
     public FileCollection getDirs() {
         return dirs;
     }
