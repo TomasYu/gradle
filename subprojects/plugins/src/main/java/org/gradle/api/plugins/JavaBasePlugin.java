@@ -64,6 +64,7 @@ import org.gradle.platform.base.BinaryContainer;
 import org.gradle.platform.base.internal.BinarySpecInternal;
 import org.gradle.platform.base.internal.DefaultComponentSpecIdentifier;
 import org.gradle.platform.base.plugins.BinaryBasePlugin;
+import org.gradle.util.SingleMessageLogger;
 import org.gradle.util.WrapUtil;
 
 import javax.inject.Inject;
@@ -273,7 +274,9 @@ public class JavaBasePlugin implements Plugin<ProjectInternal> {
 
     }
 
+    @Deprecated
     public void configureForSourceSet(final SourceSet sourceSet, final AbstractCompile compile) {
+        SingleMessageLogger.nagUserOfReplacedMethod("configureForSourceSet(SourceSet, AbstractCompile)", "configureForSourceSet(SourceSet, SourceDirectorySet, AbstractCompile, Project)");
         ConventionMapping conventionMapping;
         compile.setDescription("Compiles the " + sourceSet.getJava() + ".");
         conventionMapping = compile.getConventionMapping();
@@ -283,7 +286,8 @@ public class JavaBasePlugin implements Plugin<ProjectInternal> {
                 return sourceSet.getCompileClasspath().plus(compile.getProject().files(sourceSet.getJava().getOutputDir()));
             }
         });
-        // TODO: This doesn't work any more, but configureForSourceSet is a public API.
+        // TODO: This doesn't really work any more, but configureForSourceSet is a public API.
+        // This should allow builds to continue to work, but it will kill build caching for JavaCompile
         conventionMapping.map("destinationDir", new Callable<Object>() {
             public Object call() throws Exception {
                 return sourceSet.getOutput().getClassesDir();
