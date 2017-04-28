@@ -50,9 +50,6 @@ public class DefaultSourceSetOutput extends CompositeFileCollection implements S
 
         this.outputDirectories = new DefaultConfigurableFileCollection(displayName, fileResolver, taskResolver, new Callable() {
             public Object call() throws Exception {
-                if (isLegacyLayout()) {
-                    return fileResolver.resolve(classesDir);
-                }
                 return classesDirs;
             }
         }, new Callable() {
