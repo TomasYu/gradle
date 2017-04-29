@@ -21,10 +21,10 @@ import org.gradle.internal.logging.events.BatchOutputEventListener;
 import org.gradle.internal.logging.events.EndOutputEvent;
 import org.gradle.internal.logging.events.OperationIdentifier;
 import org.gradle.internal.logging.events.OutputEvent;
+import org.gradle.internal.logging.events.PhaseProgressStartEvent;
 import org.gradle.internal.logging.events.ProgressCompleteEvent;
 import org.gradle.internal.logging.events.ProgressStartEvent;
 import org.gradle.internal.logging.events.RenderableOutputEvent;
-import org.gradle.internal.logging.progress.BuildOperationType;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -78,7 +78,8 @@ public class GroupedBuildOperationRenderer extends BatchOutputEventListener {
     }
 
     private void onStart(ProgressStartEvent event) {
-        if (isTaskExecutionProgressStartEvent(event) && event.getBuildOperationId() != null) {
+        // FIXME(ew): logic here is surely off
+        if (event.getBuildOperationId() != null && !(event instanceof PhaseProgressStartEvent)) {
             progressIdToBuildOperationIdMap.put(event.getProgressOperationId(), event.getBuildOperationId());
             groupedTaskBuildOperations.put(event.getBuildOperationId(), Lists.newArrayList((OutputEvent) event));
         } else {
@@ -139,10 +140,6 @@ public class GroupedBuildOperationRenderer extends BatchOutputEventListener {
         executor.shutdown();
         groupedTaskBuildOperations.clear();
         renderState.clear();
-    }
-
-    private boolean isTaskExecutionProgressStartEvent(ProgressStartEvent event) {
-        return BuildOperationType.PHASE == event.getBuildOperationType();
     }
 
     private void forwardEvent(OutputEvent event) {

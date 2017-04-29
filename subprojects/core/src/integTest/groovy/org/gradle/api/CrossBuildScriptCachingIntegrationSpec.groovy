@@ -52,7 +52,7 @@ class CrossBuildScriptCachingIntegrationSpec extends AbstractIntegrationSpec {
         remappedCachesDir = new File(versionCaches, 'scripts-remapped')
     }
 
-    def "identical build files are compiled once"() {
+    def "identical build filºes are compiled once"() {
         given:
         root {
             core {

@@ -23,10 +23,10 @@ public class ProgressBarFormatter {
     private char fillerChar;
     private int current;
     private final char incompleteChar;
-    private int total;
+    private long total;
     private String suffix;
 
-    public ProgressBarFormatter(String progressBarPrefix, int progressBarWidth, String progressBarSuffix, char completeChar, char incompleteChar, String suffix, int total) {
+    public ProgressBarFormatter(String progressBarPrefix, int progressBarWidth, String progressBarSuffix, char completeChar, char incompleteChar, String suffix, long total) {
         this.progressBarPrefix = progressBarPrefix;
         this.progressBarWidth = progressBarWidth;
         this.progressBarSuffix = progressBarSuffix;

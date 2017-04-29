@@ -32,7 +32,8 @@ import static org.gradle.internal.progress.BuildOperationDescriptor.displayName
 class DefaultBuildOperationExecutorTest extends ConcurrentSpec {
     def listener = Mock(BuildOperationListener)
     def timeProvider = Mock(TimeProvider)
-    def progressLoggerFactory = Mock(ProgressLoggerFactory)
+    def progressLoggerFactory = Spy(TestProgressLoggerFactory)
+    def progressLogger = new TestProgressLogger()
     def operationExecutor = new DefaultBuildOperationExecutor(listener, timeProvider, progressLoggerFactory, Mock(BuildOperationQueueFactory), Mock(ExecutorFactory), 1)
 
     def "fires events when operation starts and finishes successfully"() {
@@ -41,7 +42,7 @@ class DefaultBuildOperationExecutorTest extends ConcurrentSpec {
 
         and:
         def buildOperation = Mock(CallableBuildOperation)
-        def progressLogger = Mock(ProgressLogger)
+        def progressLogger = Spy(TestProgressLogger)
         def details = Mock(BuildOperationDetails)
         def operationDetailsBuilder = displayName("<some-operation>").name("<op>").progressDisplayName("<some-op>").details(details)
         def id
@@ -66,10 +67,8 @@ class DefaultBuildOperationExecutorTest extends ConcurrentSpec {
         }
 
         then:
-        1 * progressLoggerFactory.newOperation(_, _ as BuildOperationDescriptor) >> progressLogger
-        1 * progressLogger.setDescription("<some-operation>")
-        1 * progressLogger.setShortDescription("<some-op>")
-        1 * progressLogger.started()
+        1 * progressLoggerFactory.newOperation(_ as Class, _ as BuildOperationDescriptor) >> progressLogger
+        1 * progressLogger.start("<some-operation>", "<some-op>")
 
         then:
         1 * buildOperation.call(_) >> "result"
@@ -102,7 +101,7 @@ class DefaultBuildOperationExecutorTest extends ConcurrentSpec {
         def buildOperation = Mock(RunnableBuildOperation)
         def operationDescriptionBuilder = displayName("<some-operation>").progressDisplayName("<some-op>")
         def failure = new RuntimeException()
-        def progressLogger = Mock(ProgressLogger)
+        def progressLogger = Spy(TestProgressLogger)
         def id
 
         when:
@@ -124,10 +123,8 @@ class DefaultBuildOperationExecutorTest extends ConcurrentSpec {
         }
 
         then:
-        1 * progressLoggerFactory.newOperation(_, _ as BuildOperationDescriptor) >> progressLogger
-        1 * progressLogger.setDescription("<some-operation>")
-        1 * progressLogger.setShortDescription("<some-op>")
-        1 * progressLogger.started()
+        1 * progressLoggerFactory.newOperation(_ as Class, _ as BuildOperationDescriptor) >> progressLogger
+        1 * progressLogger.start("<some-operation>", "<some-op>")
 
         then:
         1 * buildOperation.run(_) >> { throw failure }
@@ -160,6 +157,9 @@ class DefaultBuildOperationExecutorTest extends ConcurrentSpec {
         operationExecutor.run(buildOperation)
 
         then:
+        1 * progressLoggerFactory.newOperation(_ as Class, _ as BuildOperationDescriptor) >> progressLogger
+
+        then:
         1 * buildOperation.run(_) >> { BuildOperationContext context -> context.failed(failure) }
 
         then:
@@ -183,6 +183,9 @@ class DefaultBuildOperationExecutorTest extends ConcurrentSpec {
         operationExecutor.run(buildOperation)
 
         then:
+        1 * progressLoggerFactory.newOperation(_ as Class, _ as BuildOperationDescriptor) >> progressLogger
+
+        then:
         1 * buildOperation.run(_) >> { BuildOperationContext context -> context.result = result }
 
         then:
@@ -192,17 +195,6 @@ class DefaultBuildOperationExecutorTest extends ConcurrentSpec {
 
         cleanup:
         GradleThread.setUnmanaged()
-    }
-
-    def "does not generate progress logging when operation has no progress display name"() {
-        def buildOperation = Spy(TestRunnableBuildOperation)
-
-        when:
-        operationExecutor.run(buildOperation)
-
-        then:
-        1 * buildOperation.run(_)
-        0 * progressLoggerFactory._
     }
 
     def "multiple threads can run independent operations concurrently"() {
@@ -438,7 +430,6 @@ class DefaultBuildOperationExecutorTest extends ConcurrentSpec {
         ex.message == 'No operation is currently running.'
     }
 
-
     def "can nest operations on unmanaged threads"() {
         when:
         async {
@@ -655,5 +646,63 @@ class DefaultBuildOperationExecutorTest extends ConcurrentSpec {
         BuildOperationDescriptor.Builder description() { displayName("test") }
         String toString() { getClass().simpleName }
         void run(BuildOperationContext buildOperationContext) {}
+    }
+
+    static class TestProgressLoggerFactory implements ProgressLoggerFactory {
+        ProgressLogger newOperation(String loggerCategory) {
+            throw new UnsupportedOperationException()
+        }
+
+        ProgressLogger newOperation(Class<?> loggerCategory) {
+            throw new UnsupportedOperationException()
+        }
+
+        ProgressLogger newOperation(Class<?> loggerCategory, BuildOperationDescriptor buildOperationDescriptor) {
+            return new TestProgressLogger()
+        }
+
+        ProgressLogger newOperation(Class<?> loggerClass, ProgressLogger parent) {
+            throw new UnsupportedOperationException()
+        }
+    }
+
+    static class TestProgressLogger implements ProgressLogger {
+        String description
+        String shortDescription
+        String loggingHeader
+
+        String getDescription() { description }
+
+        ProgressLogger setDescription(String description) {
+            this.description = description
+            this
+        }
+
+        String getShortDescription() { shortDescription }
+
+        ProgressLogger setShortDescription(String description) {
+            this.shortDescription = description
+            this
+        }
+
+        String getLoggingHeader() { loggingHeader }
+
+        ProgressLogger setLoggingHeader(String header) {
+            this.loggingHeader = header
+            this
+        }
+
+        ProgressLogger start(String description, String shortDescription) {
+            setDescription(description)
+            setShortDescription(shortDescription)
+            started()
+            this
+        }
+
+        void started() {}
+        void started(String status) {}
+        void progress(String status) {}
+        void completed() {}
+        void completed(String status) {}
     }
 }

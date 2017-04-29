@@ -18,10 +18,12 @@ package org.gradle.internal.logging.progress;
 
 import org.gradle.api.Nullable;
 import org.gradle.internal.logging.events.OperationIdentifier;
+import org.gradle.internal.logging.events.PhaseProgressStartEvent;
 import org.gradle.internal.logging.events.ProgressCompleteEvent;
 import org.gradle.internal.logging.events.ProgressEvent;
 import org.gradle.internal.logging.events.ProgressStartEvent;
 import org.gradle.internal.progress.BuildOperationDescriptor;
+import org.gradle.internal.progress.PhaseBuildOperationDetails;
 import org.gradle.internal.time.TimeProvider;
 import org.gradle.util.GUtil;
 
@@ -142,18 +144,14 @@ public class DefaultProgressLoggerFactory implements ProgressLoggerFactory {
                 parent.assertRunning();
             }
             current.set(this);
-            ProgressStartEvent progressStartEvent = new ProgressStartEvent(
-                progressOperationId,
-                parent == null ? null : parent.progressOperationId,
-                timeProvider.getCurrentTime(),
-                category,
-                description,
-                shortDescription,
-                loggingHeader,
-                toStatus(status),
-                getBuildOperationId(),
-                getParentBuildOperationId(),
-                BuildOperationType.fromDescriptor(buildOperationDescriptor));
+
+            ProgressStartEvent progressStartEvent;
+            if (buildOperationDescriptor != null && buildOperationDescriptor.getDetails() instanceof PhaseBuildOperationDetails) {
+                progressStartEvent = new PhaseProgressStartEvent(progressOperationId, parent == null ? null : parent.progressOperationId, timeProvider.getCurrentTime(), category, description, shortDescription, loggingHeader, toStatus(status), getBuildOperationId(), getParentBuildOperationId(), ((PhaseBuildOperationDetails) buildOperationDescriptor.getDetails()).getChildren());
+            } else {
+                progressStartEvent = new ProgressStartEvent(progressOperationId, parent == null ? null : parent.progressOperationId, timeProvider.getCurrentTime(), category, description, shortDescription, loggingHeader, toStatus(status), getBuildOperationId(), getParentBuildOperationId());
+            }
+
             listener.started(progressStartEvent);
         }
 

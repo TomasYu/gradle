@@ -51,4 +51,12 @@ public class ProgressOperations {
         }
         return op;
     }
+
+    OperationIdentifier getParentProgressOperationId(OperationIdentifier operationId) {
+        ProgressOperation progressOperation = operationsById.get(operationId);
+        if (progressOperation != null) {
+            return progressOperation.getOperationId();
+        }
+        return null;
+    }
 }

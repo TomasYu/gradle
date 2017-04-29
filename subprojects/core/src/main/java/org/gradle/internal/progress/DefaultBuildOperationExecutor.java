@@ -217,8 +217,8 @@ public class DefaultBuildOperationExecutor implements BuildOperationExecutor, St
 
     private ProgressLogger createProgressLogger(DefaultBuildOperationState currentOperation) {
         BuildOperationDescriptor descriptor = currentOperation.getDescription();
-        return progressLoggerFactory.newOperation(DefaultBuildOperationExecutor.class, descriptor)
-            .start(descriptor.getDisplayName(), descriptor.getProgressDisplayName());
+        ProgressLogger progressLogger = progressLoggerFactory.newOperation(DefaultBuildOperationExecutor.class, descriptor);
+        return progressLogger.start(descriptor.getDisplayName(), descriptor.getProgressDisplayName());
     }
 
     private DefaultBuildOperationState maybeStartUnmanagedThreadOperation(DefaultBuildOperationState parentState) {

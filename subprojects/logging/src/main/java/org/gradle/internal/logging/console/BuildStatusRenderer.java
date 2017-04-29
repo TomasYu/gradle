@@ -21,18 +21,19 @@ import org.gradle.internal.logging.events.BatchOutputEventListener;
 import org.gradle.internal.logging.events.EndOutputEvent;
 import org.gradle.internal.logging.events.OperationIdentifier;
 import org.gradle.internal.logging.events.OutputEvent;
+import org.gradle.internal.logging.events.PhaseProgressStartEvent;
 import org.gradle.internal.logging.events.ProgressCompleteEvent;
-import org.gradle.internal.logging.events.ProgressEvent;
 import org.gradle.internal.logging.events.ProgressStartEvent;
 import org.gradle.internal.logging.format.ProgressBarFormatter;
 import org.gradle.internal.logging.format.TersePrettyDurationFormatter;
-import org.gradle.internal.logging.progress.BuildOperationType;
 import org.gradle.internal.logging.text.Span;
 import org.gradle.internal.logging.text.Style;
 import org.gradle.internal.nativeintegration.console.ConsoleMetaData;
 import org.gradle.internal.time.TimeProvider;
 
 import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -53,10 +54,11 @@ public class BuildStatusRenderer extends BatchOutputEventListener {
     private final TimeProvider timeProvider;
     private final ScheduledExecutorService executor;
     private final TersePrettyDurationFormatter elapsedTimeFormatter = new TersePrettyDurationFormatter();
+    private final Set<OperationIdentifier> startedPhaseChildren = new LinkedHashSet<OperationIdentifier>();
     private final Object lock = new Object();
     private String currentBuildStatus;
     private OperationIdentifier rootOperationId;
-    private Object currentPhaseBuildOperationId;
+    private Object currentPhaseProgressOperationId;
     private long buildStartTimestamp;
     private ScheduledFuture future;
     private ProgressBarFormatter progressBarFormatter;
@@ -75,33 +77,20 @@ public class BuildStatusRenderer extends BatchOutputEventListener {
         this.buildStartTimestamp = timeProvider.getCurrentTime();
     }
 
-    private void buildStarted(ProgressStartEvent progressStartEvent) {
-        currentBuildStatus = progressStartEvent.getShortDescription();
-        progressBarFormatter = newProgressBar(progressStartEvent.getShortDescription(), 1);
-    }
-
-    private void buildProgressed(ProgressEvent progressEvent) {
-        currentBuildStatus = progressEvent.getStatus();
-    }
-
-    private void buildFinished(ProgressCompleteEvent progressCompleteEvent) {
-        currentBuildStatus = "";
-    }
-
     @Override
     public void onOutput(OutputEvent event) {
-        if (event instanceof ProgressStartEvent) {
+        if (event instanceof PhaseProgressStartEvent) {
+            onPhaseStart((PhaseProgressStartEvent) event);
+        } else if (event instanceof ProgressStartEvent) {
             onStart((ProgressStartEvent) event);
         } else if (event instanceof ProgressCompleteEvent) {
             ProgressCompleteEvent completeEvent = (ProgressCompleteEvent) event;
             if (completeEvent.getProgressOperationId().equals(rootOperationId)) {
                 rootOperationId = null;
-                buildFinished(completeEvent);
-            }
-        } else if (event instanceof ProgressEvent) {
-            ProgressEvent progressEvent = (ProgressEvent) event;
-            if (progressEvent.getProgressOperationId().equals(rootOperationId)) {
-                buildProgressed(progressEvent);
+            } else if (completeEvent.getProgressOperationId() == currentPhaseProgressOperationId) {
+                startedPhaseChildren.clear();
+            } else if (startedPhaseChildren.contains(completeEvent.getProgressOperationId())) {
+                onPhaseProgress();
             }
         } else if (event instanceof EndOutputEvent) {
             if (future != null && !future.isCancelled()) {
@@ -151,24 +140,29 @@ public class BuildStatusRenderer extends BatchOutputEventListener {
         return status + " [" + elapsedTime + "]";
     }
 
+    private void onPhaseStart(PhaseProgressStartEvent event) {
+        progressBarFormatter = newProgressBar(event.getShortDescription(), event.getChildren());
+        currentBuildStatus = progressBarFormatter.getProgress();
+        currentPhaseProgressOperationId = event.getProgressOperationId();
+    }
+
+    private void onPhaseProgress() {
+        currentBuildStatus = progressBarFormatter.incrementAndGetProgress();
+    }
+
     private void onStart(ProgressStartEvent startEvent) {
         if (startEvent.getBuildOperationId() != null && ((OperationIdentifier) startEvent.getBuildOperationId()).getId() == 0L) {
             // if root operation, assign root operation and initialize display
             rootOperationId = startEvent.getProgressOperationId();
             progressBarFormatter = newProgressBar("INITIALIZING", 1);
             currentBuildStatus = progressBarFormatter.getProgress();
-        } else if (startEvent.getBuildOperationType() == BuildOperationType.PHASE) {
-            // TODO(ew): serialize PhaseBuildOperationDetails info
-            progressBarFormatter = newProgressBar(startEvent.getShortDescription(), 0);
-            currentBuildStatus = progressBarFormatter.getProgress();
-            currentPhaseBuildOperationId = startEvent.getBuildOperationId();
-        } else if (startEvent.getParentBuildOperationId() != null && startEvent.getParentBuildOperationId() == currentPhaseBuildOperationId) {
-            currentBuildStatus = progressBarFormatter.incrementAndGetProgress();
+        } else if (startEvent.getParentBuildOperationId() == currentPhaseProgressOperationId) {
+            startedPhaseChildren.add(startEvent.getProgressOperationId());
         }
     }
 
     @VisibleForTesting
-    public ProgressBarFormatter newProgressBar(String initialSuffix, int totalWorkItems) {
+    public ProgressBarFormatter newProgressBar(String initialSuffix, long totalWorkItems) {
         return new ProgressBarFormatter(PROGRESS_BAR_PREFIX,
             PROGRESS_BAR_WIDTH,
             PROGRESS_BAR_SUFFIX,

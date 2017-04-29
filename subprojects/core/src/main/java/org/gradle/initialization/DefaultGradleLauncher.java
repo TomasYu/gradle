@@ -141,7 +141,12 @@ public class DefaultGradleLauncher implements GradleLauncher {
         }
 
         if (stage == null) {
-            buildOperationExecutor.run(new InitializeBuildOperation());
+            // Evaluate init scripts
+            initScriptHandler.executeScripts(gradle);
+
+            // Build `buildSrc`, load settings.gradle, and construct composite (if appropriate)
+            settings = settingsLoader.findAndLoadSettings(gradle);
+
             stage = Stage.Load;
         }
 
